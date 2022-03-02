@@ -40,26 +40,26 @@ def ts_reg(factor_matrix, test_assets, RF, table):
     table = pd.concat([table, ts_result.loc[[r'$[t]$']]])
     return table.astype(float).round(2)
 
-def make_owt(pvwret, _ff):
+def make_owt(pvwret, _ff, sorting_bin):
     import pandas as pd
     import numpy as np
     pvwret = pd.merge(pvwret,_ff,on='jdate',how='left')
-    pvwret = pvwret.rename(columns={1:'Low', 10: 'High', 'date':'L-H'})
+    pvwret = pvwret.rename(columns={1:'Low', sorting_bin: 'High', 'date':'L-H'})
     pvwret['L-H'] = pvwret['Low'] - pvwret['High'] 
 
-    col_name = pvwret.columns.tolist()[1:12]
+    col_name = pvwret.columns.tolist()[1:sorting_bin+2]
     ow_table = pd.DataFrame(columns= col_name)
     # calculate average
-    for col in pvwret.iloc[:,1:11].columns:
+    for col in pvwret.iloc[:,1:sorting_bin+1].columns:
         pvwret[col] = pvwret[col]-pvwret['rf']
-    ow_table.loc[r'$r^S$',:] = pvwret.iloc[:,1:12].mean()*1200
+    ow_table.loc[r'$r^S$',:] = pvwret.iloc[:,1:sorting_bin+2].mean()*1200
 
     # manually calculate the t stats for the estimated mean of excess return, using the sample std/sqrt(num) as the estimated std for the mean
-    num = pvwret.iloc[:,1:12].shape[0] 
-    ow_table.loc[r'$[t]$',:] = pvwret.iloc[:,1:12].mean()/pvwret.iloc[:,1:12].std()*np.sqrt(num)
+    num = pvwret.iloc[:,1:sorting_bin+2].shape[0] 
+    ow_table.loc[r'$[t]$',:] = pvwret.iloc[:,1:sorting_bin+2].mean()/pvwret.iloc[:,1:sorting_bin+2].std()*np.sqrt(num)
     # calculate alpha from ts_reg and concat to the table
-    ow_table = ts_reg(pvwret[['mktrf']], pvwret.iloc[:,1:12], 0, ow_table)
-    ow_table = ts_reg(pvwret[['smb','hml','mktrf']], pvwret.iloc[:,1:12], 0, ow_table)
+    ow_table = ts_reg(pvwret[['mktrf']], pvwret.iloc[:,1:sorting_bin+2], 0, ow_table)
+    ow_table = ts_reg(pvwret[['smb','hml','mktrf']], pvwret.iloc[:,1:sorting_bin+2], 0, ow_table)
     # using 10 portfolios to calcuate their average alpha
     ow_table['MAE'] = abs(ow_table.iloc[:,0:-1]).mean(axis=1).round(2)
     ow_table.iloc[[0,1,3,5],-1] = ''
